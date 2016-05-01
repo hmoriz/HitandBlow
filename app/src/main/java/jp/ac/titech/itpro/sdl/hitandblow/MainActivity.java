@@ -19,6 +19,13 @@ public class MainActivity extends AppCompatActivity {
     private final static String TAG = "MainActivity";
     private final static int N = 4;
 
+    private final static String KEY_STARTED = "MainActivity.started";
+    private final static String KEY_STATUS = "MainActivity.status";
+    private final static String KEY_POS = "MainActivity.pos";
+    private final static String KEY_NTRIAL = "MainActivity.ntrial";
+    private final static String KEY_PROBLEM = "MainActivity.problem";
+    private final static String KEY_GUESS = "MainActivity.guess";
+
     private final static int[] GUESS_DIGITS = {
             R.id.guess_digit_0, R.id.guess_digit_1, R.id.guess_digit_2, R.id.guess_digit_3
     };
@@ -68,7 +75,21 @@ public class MainActivity extends AppCompatActivity {
         rnd = new Random();
         problem = new int[N];
         guess = new int[N];
-        initGame();
+        if(savedInstanceState != null && savedInstanceState.getBoolean(KEY_STARTED))
+            resumeGame(savedInstanceState);
+        else
+            initGame();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(KEY_STARTED, game_started);
+        outState.putIntArray(KEY_PROBLEM, problem);
+        outState.putIntArray(KEY_GUESS, guess);
+        outState.putInt(KEY_POS, pos);
+        outState.putInt(KEY_NTRIAL, ntrial);
+        outState.putStringArrayList(KEY_STATUS, status);
     }
 
     public void onClickNumKey(View v) {
@@ -103,7 +124,8 @@ public class MainActivity extends AppCompatActivity {
                         nb++;
             }
             nb -= nh;
-            statusAdapter.add(getString(R.string.status_item, ntrial, a2i(guess), nh, nb));
+            String text = getString(R.string.status_item, ntrial, a2i(guess), nh, nb);
+            statusAdapter.add(text);
             statusView.smoothScrollToPosition(statusAdapter.getCount() - 1);
             if (nh == N) {
                 new AlertDialog.Builder(this)
@@ -182,6 +204,31 @@ public class MainActivity extends AppCompatActivity {
             problem[i] = r;
         }
         Log.i(TAG, "problem: " + a2i(problem));
+    }
+
+    private void resumeGame(Bundle inState){
+        Log.d(TAG, "resumeGame");
+        game_started=true;
+        problem = inState.getIntArray(KEY_PROBLEM);
+        guess = inState.getIntArray(KEY_GUESS);
+        pos = inState.getInt(KEY_POS);
+        ntrial = inState.getInt(KEY_NTRIAL);
+        ArrayList<String> temp = inState.getStringArrayList(KEY_STATUS);
+        if(temp != null) {
+            for (String s : temp) {
+                statusAdapter.add(s);
+            }
+        }
+        statusView.smoothScrollToPosition(statusAdapter.getCount() - 1);
+        for(int i=0;i<pos;i++){
+            guessDigits[i].setText(getString(R.string.guess_digit, guess[i]));
+        }
+        for(Button key : numKeys){
+            key.setEnabled(true);
+        }
+        ctrlButton.setText(R.string.ctrl_give_up);
+        messageView.setText(getString(R.string.message_enter));
+
     }
 
     private int a2i(int[] a) {
